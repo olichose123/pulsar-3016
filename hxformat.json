@@ -1,0 +1,56 @@
+{
+  "indentation": {
+    "character": "    "
+  },
+  "emptyLines": {
+    "importAndUsing": {
+      "betweenImportsLevel": "firstLevelPackage",
+      "betweenImports": 1,
+      "beforeUsing": 1
+    },
+    "maxAnywhereInFile": 1
+  },
+  "sameLine": {
+    "ifBody": "next",
+    "elseBody": "next",
+    "ifElse": "same",
+    "elseIf": "same",
+    "expressionIf": "same",
+    "expressionIfWithBlocks": false
+  },
+  "whitespace": {
+    "colonPolicy": "none",
+    "caseColonPolicy": "onlyAfter",
+    "objectFieldColonPolicy": "after",
+    "typeHintColonPolicy": "none",
+    "typeCheckColonPolicy": "around",
+    "ternaryPolicy": "around"
+  },
+  "wrapping": {
+    "arrayMatrixWrap": "matrixWrapWithAlign",
+    "arrayWrap": {
+      "defaultWrap": "fillLine",
+      "defaultLocation": "afterLast"
+    },
+    "maxLineLength": 100,
+    "callParameter": {
+      "defaultWrap": "noWrap",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "cond": "lineLength >= n",
+              "value": 100
+            }
+          ],
+          "type": "onePerLine"
+        }
+      ]
+    },
+    "opAddSubChain": {
+      "defaultWrap": "fillLine",
+      "defaultLocation": "beforeLast",
+      "rules": []
+    }
+  }
+}

@@ -1,0 +1,18 @@
+# ignore compiled files
+/bin
+
+# ignore macro error dump
+/dump
+
+# ignore haxelib
+/.haxelib
+
+# ignore logs
+logs.txt
+/logs
+
+# ignore .vscode
+/.vscode
+
+# ignore temp files
+/.tmp
