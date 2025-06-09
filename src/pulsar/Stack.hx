@@ -28,6 +28,10 @@ class Stack {
         }
         return contents.pop();
     }
+
+    public function reset():Void {
+        contents.resize(0);
+    }
 }
 
 class StackException extends PulsarException {
