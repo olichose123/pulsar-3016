@@ -1,5 +1,7 @@
 package pulsar;
 
+import pulsar.Stack.StackException;
+
 import haxe.ds.StringMap;
 
 class Processor {
@@ -62,6 +64,8 @@ class Processor {
                     case 0x1: return instructionJump;
                     case 0x2: return instructionCall;
                     case 0xE: return instructionReturn;
+                    case 0xA: return instructionJumpToAddress;
+                    case 0xB: return instructionCallToAddress;
                     default: throw new PulsarException("Unknown subroutine instruction");
                 }
             case 0xB:
@@ -159,6 +163,23 @@ class Processor {
         timers[index] = value;
     }
 
+    public function reset():Void {
+        programCounter = 0;
+        addressStack.reset();
+        for (memory in memories) {
+            memory.reset();
+        }
+        for (register in registers) {
+            register.setValue(0);
+        }
+        for (buffer in buffers) {
+            buffer.clear();
+        }
+        for (i in 0...timers.length) {
+            timers[i] = new Word16(0);
+        }
+    }
+
     // 0xAx subroutine instructions
 
     /**
@@ -174,6 +195,16 @@ class Processor {
     }
 
     /**
+     * Jump to an address specified in word b.
+     * 0xAA00 0000
+     * @param wordA
+     * @param wordB
+    **/
+    public function instructionJumpToAddress(wordA:Word16, wordB:Word16):Void {
+        setProgramCounter(wordB);
+    }
+
+    /**f
      * Call a subroutine at the address specified in register a.
      * 0xA2a0 0000
      * @param wordA
@@ -187,6 +218,17 @@ class Processor {
     }
 
     /**
+     * Call a subroutine at the address specified in word b.
+     * 0xAB00 0000
+     * @param wordA
+     * @param wordB
+    **/
+    public function instructionCallToAddress(wordA:Word16, wordB:Word16):Void {
+        addressStack.push(getProgramCounter());
+        setProgramCounter(wordB);
+    }
+
+    /**
      * Return from a subroutine, restoring the program counter to the address
      * stored in the address stack.
      * 0xAE00 0000
@@ -194,7 +236,12 @@ class Processor {
      * @param wordB
     **/
     public function instructionReturn(wordA:Word16, wordB:Word16):Void {
-        var returnAddress = addressStack.pop();
+        var returnAddress;
+        try {
+            returnAddress = addressStack.pop();
+        } catch (e:StackException) {
+            throw new ProgramException("End of program.");
+        }
         setProgramCounter(returnAddress);
         programCounter += 2;
     }
@@ -217,8 +264,8 @@ class Processor {
     }
 
     /**
-     * Set the value of register a to the value AAAA.
-     * 0xB2a0 AAAA
+     * Set the value of register a to the value XXXX.
+     * 0xB2a0 XXXX
      * @param wordA
      * @param wordB
     **/
@@ -497,9 +544,9 @@ class Processor {
         var registerX = getRegister(registerXIndex);
         var registerY = getRegister(registerYIndex);
         if (registerX.getValue() == registerY.getValue()) {
-            programCounter += 2;
-        } else {
             programCounter += 4;
+        } else {
+            programCounter += 2;
         }
     }
 
@@ -516,9 +563,9 @@ class Processor {
         var registerY = getRegister(registerYIndex);
 
         if (registerX.getValue() != registerY.getValue()) {
-            programCounter += 2;
-        } else {
             programCounter += 4;
+        } else {
+            programCounter += 2;
         }
     }
 
@@ -535,9 +582,9 @@ class Processor {
         var registerY = getRegister(registerYIndex);
 
         if (registerX.getValue() > registerY.getValue()) {
-            programCounter += 2;
-        } else {
             programCounter += 4;
+        } else {
+            programCounter += 2;
         }
     }
 
@@ -554,9 +601,9 @@ class Processor {
         var registerY = getRegister(registerYIndex);
 
         if (registerX.getValue() < registerY.getValue()) {
-            programCounter += 2;
-        } else {
             programCounter += 4;
+        } else {
+            programCounter += 2;
         }
     }
 
@@ -627,7 +674,7 @@ class Processor {
 
     /**
      * Store the size of buffer b in register r.
-     * 0xD4bx 0000
+     * 0xD4xb 0000
      * @param wordA
      * @param wordB
     **/
@@ -684,7 +731,7 @@ class Processor {
 
     /**
      * Set a timer with the value from register r.
-     * 0xF1tr 0000
+     * 0xF1rt 0000
      * @param wordA
      * @param wordB
     **/
@@ -700,7 +747,7 @@ class Processor {
 
     /**
      * Get the value of a timer and store it in register r.
-     * 0xF2tr 0000
+     * 0xF2rt 0000
      * @param wordA
      * @param wordB
     **/
@@ -713,9 +760,57 @@ class Processor {
         register.setValue(timerValue);
         programCounter += 2;
     }
+
+    public function runOnce():Void {
+        var wordA = getMemory(0).getValue(programCounter);
+        var wordB = getMemory(0).getValue(programCounter + 1);
+
+        var instructionMethod;
+        try {
+            instructionMethod = getMethodFromOpcode(wordA);
+        } catch (e:PulsarException) {
+            throw new ProgramException("Invalid instruction at address " + programCounter + ": "
+                + e.message
+            );
+        }
+
+        instructionMethod(wordA, wordB);
+
+        if (programCounter + 2 > 0xFFFF) {
+            throw new ProgramException("Program counter at end of main memory space.");
+        }
+    }
+
+    public function run():Void {
+        while (true) {
+            try {
+                runOnce();
+            } catch (e:ProgramException) {
+                trace("Program terminated: " + e.message);
+                return;
+            } catch (e:PulsarException) {
+                trace("Error during execution: " + e.message);
+                return;
+            }
+        }
+    }
+
+    public function decrementTimers():Void {
+        for (i in 0...timers.length) {
+            if (timers[i] > 0) {
+                timers[i]--;
+            }
+        }
+    }
 }
 
 class InstructionException extends PulsarException {
+    public function new(message:String) {
+        super(message);
+    }
+}
+
+class ProgramException extends PulsarException {
     public function new(message:String) {
         super(message);
     }
