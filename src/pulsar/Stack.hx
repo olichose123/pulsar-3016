@@ -3,28 +3,35 @@ package pulsar;
 class Stack {
     public var contents(default, null):Array<Word16>;
 
-    public function new(stack_depth:Int) {
-        if (stack_depth <= 0) {
-            throw "Stack depth must be greater than 0";
+    var stackDepth:Int;
+
+    public function new(stackDepth:Int) {
+        if (stackDepth <= 0) {
+            throw new StackException("Stack depth must be greater than 0");
         }
 
+        this.stackDepth = stackDepth;
+
         contents = new Array<Word16>();
-        for (i in 0...stack_depth) {
-            contents[i] = new Word16(0);
-        }
     }
 
     public function push(value:Word16):Void {
-        if (contents.length >= contents.length) {
-            throw "Stack overflow";
+        if (contents.length >= stackDepth) {
+            throw new StackException("Stack overflow: Cannot push to full stack");
         }
         contents.push(value);
     }
 
     public function pop():Word16 {
         if (contents.length == 0) {
-            throw "Stack underflow";
+            throw new StackException("Stack underflow: No contents to pop");
         }
         return contents.pop();
+    }
+}
+
+class StackException extends PulsarException {
+    public function new(message:String) {
+        super(message);
     }
 }

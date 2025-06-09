@@ -12,15 +12,37 @@ class Memory {
 
     public function setValue(address:Int, value:Word16):Void {
         if (address < 0 || address >= 0xFFFF) {
-            throw "Address out of bounds: " + address;
+            throw new MemoryException("Address out of bounds: " + address);
         }
         data[address] = value;
     }
 
     public function getValue(address:Int):Word16 {
         if (address < 0 || address >= 0xFFFF) {
-            throw "Address out of bounds: " + address;
+            throw new MemoryException("Address out of bounds: " + address);
         }
         return data[address];
+    }
+
+    public function writeBuffer(startAddress:Word16, buffer:Buffer):Void {
+        for (i in 0...buffer.contents.length) {
+            if (startAddress + i < 0xFFFF) {
+                data[startAddress + i] = buffer.contents[i];
+            }
+        }
+    }
+
+    public function readToBuffer(startAddress:Word16, buffer:Buffer):Void {
+        for (i in 0...buffer.size) {
+            if (startAddress + i < 0xFFFF) {
+                buffer.contents[i] = data[startAddress + i];
+            }
+        }
+    }
+}
+
+class MemoryException extends PulsarException {
+    public function new(message:String) {
+        super(message);
     }
 }

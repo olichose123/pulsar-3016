@@ -2,7 +2,7 @@ package pulsar;
 
 using StringTools;
 
-abstract Word16(Int) {
+abstract Word16(Int) to Int {
     static var reg_16bit:EReg = ~/^(0x)?([0-9a-fA-F]{4})$/i;
     static var reg_8bit:EReg = ~/^(0x)?([0-9a-fA-F]{2})$/i;
 
